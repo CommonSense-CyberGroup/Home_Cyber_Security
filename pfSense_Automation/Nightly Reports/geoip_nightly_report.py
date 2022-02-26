@@ -25,7 +25,6 @@ Considerations:
         https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
 
 To Do / Notes:
-    -Clean up email and attachment
 
 '''
 
@@ -36,8 +35,11 @@ import folium
 import datetime
 import requests
 import os
-import smtplib, ssl
-from email.message import EmailMessage
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 
 
 ### DEFINE VARIABLES ###
@@ -47,9 +49,10 @@ unique_countries = []   #List of unique countries to count
 lat_list = []    #Latitude values for mapping
 lon_list = []    #Longitude values for mapping
 country_count = []  #Final list of coutries and their count
+total_blocked = 0  #Total number of blocker connections for the day
 current_ip = requests.get('https://api.ipify.org').content.decode('utf8')
 log = "nightly_geoip_log.txt"
-map_file = f'{datetime.datetime.now().strftime("%b-%d-%Y")}_GeoIP_Log_Map.html'
+map_file = f'{((datetime.date.today()) - datetime.timedelta(days=1)).strftime("%b-%d-%Y")}_GeoIP_Log_Map.html'
 config_file = "geoip_report.conf"
 max_mind_country = "GeoLite2-Country_20220222\\GeoLite2-Country.mmdb"
 max_min_city = "GeoLite2-City_20220222\\GeoLite2-City.mmdb"
@@ -72,7 +75,7 @@ def parse_config():
             if "alert_passwd" in row:
                 alert_password = row.split(":")[1]
 
-    return email, alert_email, alert_password, smtp_server, smtp_port
+    return email, alert_email, alert_password
 
 #Function for mapping
 def map():
@@ -93,38 +96,41 @@ def map():
 
 #Function to email report
 def email_report():
+    #Make our output a little prettier
+    pretty_body = str(country_count).replace("[", "").replace("]", "").replace("', '", "\n").replace("'", "")
+
     #Create message to send
     message_beginning = """
-        -- Aria Daily GeoIP Blocked Report --
+    -- Aria Daily GeoIP Blocked Report --
+    """
 
+    #Set the message up
+    message = MIMEMultipart()
+    message["From"] = email
+    message['To'] = alert_email
+    message['Subject'] = "Aria Daily GeoIP Blocked Report"
 
-        """
+    #Attach the file and body
+    attachment = open(map_file, 'rb')
+    obj = MIMEBase('application', 'octet-stream')
+    obj.set_payload((attachment).read())
+    encoders.encode_base64(obj)
+    obj.add_header('Content-Disposition',"attachment; filename= " + map_file)
+    message.attach(obj)
+    message.attach(MIMEText(f'{message_beginning}Below are the countries and counts of blocked requests for {((datetime.date.today()) - datetime.timedelta(days=1)).strftime("%b-%d-%Y")}:\n\nTotal Blocked: {total_blocked}\n\n{pretty_body}', 'plain', 'utf-8'))
+    email_message = message.as_string()
 
-    message = f'{message_beginning}Below are the countries and counts of blocked requests for {datetime.datetime.now().strftime("%b-%d-%Y")}:\n{country_count}'
-
-    #Set everything up
-    msg = EmailMessage()
-    msg["From"] = alert_email
-    msg["Subject"] = "Aria Daily GeoIP Blocked Report"
-    msg["To"] = email
-    msg.set_content(message)
-    msg.add_attachment(open(map_file, "r").read(), filename=map_file)
-
-    #Try to log in to server
-    context = ssl.create_default_context()
-    s = smtplib.SMTP("smtp.gmail.com", 587)
-    s.ehlo()
-    s.starttls(context=context)
-    s.ehlo()
-
-    s.login(alert_email, alert_password)
-    s.send_message(msg)
+    #Start the email session and sent it
+    email_session = smtplib.SMTP('smtp.gmail.com', 587)
+    email_session.starttls()
+    email_session.login(email, alert_password)
+    email_session.sendmail(email, alert_email, email_message)
+    email_session.quit()
 
 
 ### THE THING ###
-
 #Parse config
-email, alert_email, alert_password, smtp_server, smtp_port = parse_config()
+email, alert_email, alert_password = parse_config()
 
 #Open log file and pull out all of the IPs. Add them to a list, and remove any duplicates
 with open (log, "r") as log_file:
@@ -157,6 +163,9 @@ for country in countries:
 #Loop through unique contries and count their occurrences from the logs
 for item in unique_countries:
     country_count.append("{} - {}".format(item, countries.count(item)))
+
+    #Add to the total blocked number
+    total_blocked += countries.count(item) 
 
 #Call functions for mapping and sending out the email
 map()
