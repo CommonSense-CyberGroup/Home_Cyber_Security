@@ -25,7 +25,7 @@ Considerations:
         https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
 
 To Do / Notes:
-    -mail not working??
+    -Clean up email and attachment
 
 '''
 
@@ -36,7 +36,7 @@ import folium
 import datetime
 import requests
 import os
-import smtplib
+import smtplib, ssl
 from email.message import EmailMessage
 
 
@@ -71,13 +71,6 @@ def parse_config():
 
             if "alert_passwd" in row:
                 alert_password = row.split(":")[1]
-
-            #Get the SMTP information
-            if "SMTP_server" in row:
-                smtp_server = row.split(":")[1]
-
-            if "SMTP_port:" in row:
-                smtp_port = row.split(":")[1]
 
     return email, alert_email, alert_password, smtp_server, smtp_port
 
@@ -118,7 +111,12 @@ def email_report():
     msg.add_attachment(open(map_file, "r").read(), filename=map_file)
 
     #Try to log in to server
-    s = smtplib.SMTP(smtp_server, int(smtp_port))
+    context = ssl.create_default_context()
+    s = smtplib.SMTP("smtp.gmail.com", 587)
+    s.ehlo()
+    s.starttls(context=context)
+    s.ehlo()
+
     s.login(alert_email, alert_password)
     s.send_message(msg)
 
@@ -165,7 +163,7 @@ map()
 email_report()
 
 #Delete the files that were created to stay clean and not take up space on the server
-#os.remove(log)
-#os.remove(map_file)
-#os.remove(max_mind_country)
-#os.remove(max_min_city)
+os.remove(log)
+os.remove(map_file)
+os.remove(max_mind_country)
+os.remove(max_min_city)
