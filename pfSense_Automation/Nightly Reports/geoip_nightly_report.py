@@ -117,7 +117,7 @@ def email_report():
     encoders.encode_base64(obj)
     obj.add_header('Content-Disposition',"attachment; filename= " + map_file)
     message.attach(obj)
-    message.attach(MIMEText(f'{message_beginning}Below are the countries and counts of blocked requests for {((datetime.date.today()) - datetime.timedelta(days=1)).strftime("%b-%d-%Y")}:\n\nTotal Blocked: {total_blocked}\n\n{pretty_body}', 'plain', 'utf-8'))
+    message.attach(MIMEText(f'{message_beginning}Below are the countries and counts of blocked requests for {((datetime.date.today()) - datetime.timedelta(days=1)).strftime("%b-%d-%Y")}:\n\nTotal Unique Blocked: {total_blocked}\n\n{pretty_body}', 'plain', 'utf-8'))
     email_message = message.as_string()
 
     #Start the email session and sent it
