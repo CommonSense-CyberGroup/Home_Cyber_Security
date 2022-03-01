@@ -18,9 +18,14 @@
 curl https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
 curl https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
 
+#Unzip the MaxMind DB files
 
-#Create log file from yesterdays logs
-ydate=$(date -v-1d +"%b %d") && cat /var/log/filter.log | grep "$ydate" | grep -E "1770008959|1770009276" > nightly_geoip_log.txt
+
+#Define yesterdays date
+ydate=$(date -v-1d +"%b %d")
+
+#Create geoip file from yesterdays logs
+cat /var/log/filter.log | grep "$ydate" | grep -E "1770008959|1770009276" > nightly_geoip_log.txt
 
 #Call the geoip_nightly_report.py script to create the report and email out
 python ./geoip_nightly_report.py
