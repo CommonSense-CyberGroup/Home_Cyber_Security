@@ -27,5 +27,8 @@ ydate=$(date -v-1d +"%b %d")
 #Create geoip file from yesterdays logs
 cat /var/log/filter.log | grep "$ydate" | grep -E "1770008959|1770009276" > nightly_geoip_log.txt
 
+#Create the snort log file from yesterdays logs
+cat /var/log/system.log | grep "$ydate" | grep "snort" > nightly_snort_log.txt
+
 #Call the geoip_nightly_report.py script to create the report and email out
 python ./geoip_nightly_report.py
