@@ -7,7 +7,7 @@
 #Version: 1.0.1
 #License: MIT
 #Created: 2/26/2022
-#Updated: 2/28/2022
+#Updated: 3/1/2022
 #
 #Purpose:
 #This script is intended to pull out the pfBolckerNG logs (by FW rule ID) from the FW log file. This will pull out the previous days
@@ -20,6 +20,7 @@ curl https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country
 
 #Unzip the MaxMind DB files
 
+#Remove the downloaded tarballs to stay clean and not take up space
 
 #Define yesterdays date
 ydate=$(date -v-1d +"%b %d")
@@ -32,3 +33,9 @@ cat /var/log/system.log | grep "$ydate" | grep "snort" > nightly_snort_log.txt
 
 #Call the geoip_nightly_report.py script to create the report and email out
 python ./geoip_nightly_report.py
+
+#Rotate the log files so we have a backup of them to gather over time
+mv nightly_geoip_log.txt rotated_logs/"ydate"_nightly_geoip_log.txt
+mv nightly_snort_log.txt rotated_logs/"ydate"_nightly_snort_log.txt
+
+#Delete rotated logs if they are older than 31 days
