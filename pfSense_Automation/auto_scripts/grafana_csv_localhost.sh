@@ -11,6 +11,7 @@
 #
 #Purpose:
 #This script is intended to open a port on the localhost pfSense box to be used to serve CSV and JSON files to the Infinity Grafana datasource
+#This script will run at boot as well as every minue to check and see if the port is open. If not, open it
 
 
 #Define Variables
