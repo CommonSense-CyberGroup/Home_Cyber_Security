@@ -25,6 +25,7 @@ Considerations:
         https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
 
 To Do / Notes:
+    -Set up CSV file for loading into Grafana
 
 '''
 
@@ -153,4 +154,4 @@ email_report()
 
 #Delete the files that were created to stay clean and not take up space on the server
 #os.remove(max_mind_country)
-#os.remove(max_min_city)
+#os.remove(max_mind_city)
