@@ -10,11 +10,11 @@ Version: 1.0.1
 License: MIT
 
 Created: 2/25/2022
-Updated: 3/1/2022
+Updated: 3/2/2022
 
 Purpose:
     -This script is intended to give a daily report of blocked GeoIPs from a pfSense FW using pfBlockerNG. This script is to be run manually and will email the 
-    previous days results along with an HTML map depicting the locations of IPs
+    previous days results depicting the locations of IPs
 
 Considerations:
     -Log grep string: ydate=$(date -v-1d +"%b %d") && cat /var/log/filter.log | grep "$ydate" | grep "1770008959" > nightly_geoip_log.txt
@@ -31,7 +31,6 @@ To Do / Notes:
 
 ### IMPORT LIBRARIES ###
 import geoip2.database
-import folium
 import datetime
 import requests
 import os
@@ -40,6 +39,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+import pandas as pd
 
 
 ### DEFINE VARIABLES ###
@@ -52,7 +52,6 @@ country_count = []  #Final list of coutries and their count
 total_blocked = 0  #Total number of blocker connections for the day
 current_ip = requests.get('https://api.ipify.org').content.decode('utf8')
 log = "nightly_geoip_log.txt"
-map_file = f'{((datetime.date.today()) - datetime.timedelta(days=1)).strftime("%b-%d-%Y")}_GeoIP_Log_Map.html'
 config_file = "geoip_report.conf"
 max_mind_country = "GeoLite2-Country_20220222\\GeoLite2-Country.mmdb"
 max_min_city = "GeoLite2-City_20220222\\GeoLite2-City.mmdb"
@@ -77,22 +76,9 @@ def parse_config():
 
     return email, alert_email, alert_password
 
-#Function for mapping
-def map():
-    #Define the map object
-    map = folium.Map()
-
-    #Loop through all the data we have and map the points
-    i = 0
-    while i < len(lat_list):
-
-        marker = folium.Marker(location=[lat_list[i],lon_list[i]], popup=f'IP Address: {ip_addr[i]}')
-        marker.add_to(map)
-
-        i += 1
-
-    #Save the map
-    map.save(map_file)
+#Function for making the CSV file report that will be uploaded to Grafana
+def create_report():
+    print()
 
 #Function to email report
 def email_report():
@@ -111,12 +97,6 @@ def email_report():
     message['Subject'] = "Aria Daily GeoIP Blocked Report"
 
     #Attach the file and body
-    attachment = open(map_file, 'rb')
-    obj = MIMEBase('application', 'octet-stream')
-    obj.set_payload((attachment).read())
-    encoders.encode_base64(obj)
-    obj.add_header('Content-Disposition',"attachment; filename= " + map_file)
-    message.attach(obj)
     message.attach(MIMEText(f'{message_beginning}Below are the countries and counts of blocked requests for {((datetime.date.today()) - datetime.timedelta(days=1)).strftime("%b-%d-%Y")}:\n\nTotal Unique Blocked: {total_blocked}\n\n{pretty_body}', 'plain', 'utf-8'))
     email_message = message.as_string()
 
@@ -167,11 +147,10 @@ for item in unique_countries:
     #Add to the total blocked number
     total_blocked += countries.count(item) 
 
-#Call functions for mapping and sending out the email
-map()
+#Call functions for generating CSV report and sending out the email
+create_report()
 email_report()
 
 #Delete the files that were created to stay clean and not take up space on the server
-os.remove(map_file)
 #os.remove(max_mind_country)
 #os.remove(max_min_city)
