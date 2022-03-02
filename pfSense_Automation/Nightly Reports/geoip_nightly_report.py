@@ -1,4 +1,4 @@
-#!/bin/python3
+#!usr/local//bin/python3.8
 '''
 TITLE: GeoIP Blocker Report
 BY:
@@ -10,7 +10,7 @@ Version: 1.0.1
 License: MIT
 
 Created: 2/25/2022
-Updated: 2/26/2022
+Updated: 3/1/2022
 
 Purpose:
     -This script is intended to give a daily report of blocked GeoIPs from a pfSense FW using pfBlockerNG. This script is to be run manually and will email the 
@@ -172,7 +172,6 @@ map()
 email_report()
 
 #Delete the files that were created to stay clean and not take up space on the server
-os.remove(log)
 os.remove(map_file)
-os.remove(max_mind_country)
-os.remove(max_min_city)
+#os.remove(max_mind_country)
+#os.remove(max_min_city)
